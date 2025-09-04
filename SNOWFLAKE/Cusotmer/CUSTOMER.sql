@@ -1,0 +1,15 @@
+CREATE OR REPLACE TABLE {DATABASE_CUSTOMER}}.STG.CUSTOMER (
+    CUSTOMER_ID         NUMBER(10)   NOT NULL,
+    FIRST_NAME          STRING       NOT NULL,
+    LAST_NAME           STRING       NOT NULL,
+    EMAIL               STRING       UNIQUE,
+    PHONE               STRING,
+    ADDRESS_LINE1       STRING,
+    ADDRESS_LINE2       STRING,
+    CITY                STRING,
+    STATE               STRING,
+    POSTAL_CODE         STRING,
+    COUNTRY             STRING,
+    CREATED_AT          TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP,
+    UPDATED_AT          TIMESTAMP_NTZ
+);
