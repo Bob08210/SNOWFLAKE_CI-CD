@@ -1,0 +1,69 @@
+# Only run when something is pushed to dev/qat/prd
+on:
+  push:
+    branches:
+      - dev
+      - qat
+      - prd
+
+# allow this workflow to push back to the repo
+permissions:
+  contents: write
+
+jobs:
+  replace-placeholders:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout (with write permissions)
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Determine branch and set DB values
+        shell: bash
+        run: |
+          BRANCH="${GITHUB_REF#refs/heads/}"
+          echo "Branch is: $BRANCH"
+          case "$BRANCH" in
+            dev)
+              echo "DB_CUSTOMER=DEV_CUSTOMER" >> $GITHUB_ENV
+              ;;
+            qat)
+              echo "DB_CUSTOMER=QAT_CUSTOMER" >> $GITHUB_ENV
+              ;;
+            prd)
+              echo "DB_CUSTOMER=PRD_CUSTOMER" >> $GITHUB_ENV
+              ;;
+            *)
+              echo "DB_CUSTOMER=UNKNOWN" >> $GITHUB_ENV
+              ;;
+          esac
+          echo "Mapped DB_CUSTOMER to $DB_CUSTOMER"
+
+      - name: Replace placeholders (handle {{..}} and {..})
+        shell: bash
+        run: |
+          echo "Replacing placeholders with: $DB_CUSTOMER"
+          # replace double-curly {{DATABASE_CUSTOMER}}
+          find . -type f -name "*.sql" -print0 | xargs -0 sed -i "s/{{DATABASE_CUSTOMER}}/${DB_CUSTOMER}/g" || true
+          # replace single-curly {DATABASE_CUSTOMER}
+          find . -type f -name "*.sql" -print0 | xargs -0 sed -i "s/{DATABASE_CUSTOMER}/${DB_CUSTOMER}/g" || true
+
+      - name: Commit & push changes (only if there are changes)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          BRANCH="${GITHUB_REF#refs/heads/}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No replacements done (nothing to commit)."
+          else
+            git commit -m "ci: replace DATABASE_CUSTOMER placeholder for $BRANCH"
+            git push origin HEAD:$BRANCH
+          fi
+YAML
