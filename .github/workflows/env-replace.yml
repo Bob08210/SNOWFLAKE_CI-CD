@@ -1,5 +1,8 @@
 name: Replace Database Placeholders
 
+permissions:
+  contents: write   # ✅ allows pushing commits
+
 on:
   push:
     branches:
